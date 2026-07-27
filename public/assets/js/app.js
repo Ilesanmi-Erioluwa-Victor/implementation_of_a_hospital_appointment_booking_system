@@ -11,6 +11,17 @@ function showToast(message, type = 'success') {
     setTimeout(() => toast.remove(), 5000);
 }
 
+function setLoading(btn, loading, label) {
+    if (loading) {
+        btn._origLabel = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> ' + (label || 'Loading...');
+    } else {
+        btn.disabled = false;
+        btn.innerHTML = btn._origLabel || label;
+    }
+}
+
 async function api(path, options = {}) {
     const headers = { 'Content-Type': 'application/json', ...options.headers };
     if (token) headers['Authorization'] = 'Bearer ' + token;
@@ -42,7 +53,6 @@ function updateNav() {
         staffLinks.forEach(el => { if (el) el.classList.toggle('d-none', !isStaff); });
     }
 }
-}
 
 document.addEventListener('DOMContentLoaded', () => {
     updateNav();
@@ -61,6 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
 if (document.getElementById('loginForm')) {
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        setLoading(btn, true, 'Logging in...');
         const email = document.getElementById('loginEmail').value;
         const password = document.getElementById('loginPassword').value;
         try {
@@ -74,6 +86,7 @@ if (document.getElementById('loginForm')) {
             var redirect = new URLSearchParams(window.location.search).get('redirect') || '/';
             setTimeout(() => window.location.href = redirect, 800);
         } catch (err) {
+            setLoading(btn, false, 'Login');
             showToast(err.message, 'danger');
         }
     });
@@ -82,6 +95,8 @@ if (document.getElementById('loginForm')) {
 if (document.getElementById('registerForm')) {
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        setLoading(btn, true, 'Registering...');
         const data = {
             firstName: document.getElementById('regFirstName').value,
             lastName: document.getElementById('regLastName').value,
@@ -103,6 +118,7 @@ if (document.getElementById('registerForm')) {
             var redirect = new URLSearchParams(window.location.search).get('redirect') || '/';
             setTimeout(() => window.location.href = redirect, 1500);
         } catch (err) {
+            setLoading(btn, false, 'Register');
             showToast(err.message, 'danger');
         }
     });
@@ -143,6 +159,8 @@ if (document.getElementById('resetPasswordForm')) {
 if (document.getElementById('staffLoginForm')) {
     document.getElementById('staffLoginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        setLoading(btn, true, 'Logging in...');
         const email = document.getElementById('staffEmail').value;
         const password = document.getElementById('staffPassword').value;
         try {
@@ -155,6 +173,7 @@ if (document.getElementById('staffLoginForm')) {
             showToast('Staff login successful!');
             setTimeout(() => window.location.href = '/admin', 800);
         } catch (err) {
+            setLoading(btn, false, 'Staff Login');
             showToast(err.message, 'danger');
         }
     });
@@ -517,6 +536,8 @@ if (document.getElementById('walkInSubmit')) {
         }
     });
     document.getElementById('walkInSubmit').addEventListener('click', async () => {
+        const btn = document.getElementById('walkInSubmit');
+        setLoading(btn, true, 'Booking...');
         const data = {
             phone: document.getElementById('walkInPhone').value,
             firstName: document.getElementById('walkInFirstName').value,
@@ -532,7 +553,7 @@ if (document.getElementById('walkInSubmit')) {
             showToast('Walk-in appointment booked');
             bootstrap.Modal.getInstance(document.getElementById('walkInModal')).hide();
             loadAdminAppointments();
-        } catch (err) { showToast(err.message, 'danger'); }
+        } catch (err) { setLoading(btn, false, 'Book Appointment'); showToast(err.message, 'danger'); }
     });
 }
 
@@ -540,6 +561,8 @@ if (document.getElementById('bulkCancelSubmit')) {
     loadDepartments('bulkCancelDepartment');
     document.getElementById('bulkCancelSubmit').addEventListener('click', async () => {
         if (!confirm('This will cancel ALL appointments for this doctor on this date and notify patients. Continue?')) return;
+        const btn = document.getElementById('bulkCancelSubmit');
+        setLoading(btn, true, 'Cancelling...');
         const data = {
             doctorId: document.getElementById('bulkDoctor').value,
             date: document.getElementById('bulkDate').value,
@@ -550,7 +573,7 @@ if (document.getElementById('bulkCancelSubmit')) {
             showToast(result.message);
             bootstrap.Modal.getInstance(document.getElementById('bulkCancelModal')).hide();
             loadAdminAppointments();
-        } catch (err) { showToast(err.message, 'danger'); }
+        } catch (err) { setLoading(btn, false, 'Cancel All & Notify Patients'); showToast(err.message, 'danger'); }
     });
 }
 
@@ -585,6 +608,8 @@ function editDoctor(id) {
 }
 
 async function saveDoctor() {
+    const btn = document.getElementById('doctorSave');
+    setLoading(btn, true, 'Saving...');
     const data = {
         firstName: document.getElementById('docFirstName').value,
         lastName: document.getElementById('docLastName').value,
@@ -606,12 +631,14 @@ async function saveDoctor() {
         }
         bootstrap.Modal.getInstance(document.getElementById('doctorModal')).hide();
         loadDoctorsTable();
-    } catch (err) { showToast(err.message, 'danger'); }
+    } catch (err) { setLoading(btn, false, 'Save'); showToast(err.message, 'danger'); }
 }
 
 if (document.getElementById('departmentForm')) {
     document.getElementById('departmentForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        setLoading(btn, true, 'Adding...');
         const data = {
             name: document.getElementById('deptName').value,
             description: document.getElementById('deptDesc').value,
@@ -622,7 +649,7 @@ if (document.getElementById('departmentForm')) {
             document.getElementById('deptName').value = '';
             document.getElementById('deptDesc').value = '';
             loadDepartmentsTable();
-        } catch (err) { showToast(err.message, 'danger'); }
+        } catch (err) { setLoading(btn, false, 'Add Department'); showToast(err.message, 'danger'); }
     });
     loadDepartmentsTable();
 }
