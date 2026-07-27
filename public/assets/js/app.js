@@ -197,7 +197,7 @@ async function loadDashboardStats() {
         document.getElementById('statPending').textContent = pending;
         document.getElementById('statNoShow').textContent = noShow;
     } catch (e) {
-        console.error('Failed to load dashboard stats');
+        showToast('Failed to load dashboard stats. Check that you are logged in as staff.', 'danger');
     }
 }
 
@@ -524,6 +524,10 @@ async function loadAdminAppointments() {
                 <td>${a.timeSlot}</td>
                 <td><span class="badge bg-${statusBadge[a.status] || 'secondary'}">${a.status}</span></td>
                 <td>
+                    ${a.status === 'pending' ? `
+                        <button class="btn btn-sm btn-success" onclick="confirmAppt('${a._id}')">Confirm</button>
+                        <button class="btn btn-sm btn-danger" onclick="staffCancelAppt('${a._id}')">Cancel</button>
+                    ` : ''}
                     ${a.status === 'confirmed' ? `
                         <button class="btn btn-sm btn-success" onclick="completeAppt('${a._id}')">Complete</button>
                         <button class="btn btn-sm btn-dark" onclick="noShowAppt('${a._id}')">No Show</button>
@@ -536,6 +540,14 @@ async function loadAdminAppointments() {
     } catch (err) {
         document.getElementById('appointmentsTable').innerHTML = `<tr><td colspan="6" class="text-danger">${err.message}</td></tr>`;
     }
+}
+
+async function confirmAppt(id) {
+    try {
+        await api(`/api/admin/appointments/${id}/confirm`, { method: 'PATCH' });
+        showToast('Appointment confirmed, patient notified');
+        loadAdminAppointments();
+    } catch (err) { showToast(err.message, 'danger'); }
 }
 
 async function completeAppt(id) {

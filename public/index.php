@@ -179,6 +179,8 @@ if (preg_match('#^/api/health$#', $uri) && $method === 'GET') {
     MediBook\Controllers\AppointmentController::adminList();
 } elseif (preg_match('#^/api/admin/appointments$#', $uri) && $method === 'POST') {
     MediBook\Controllers\AppointmentController::walkInBook();
+} elseif (preg_match('#^/api/admin/appointments/([a-f0-9]+)/confirm$#', $uri, $m) && $method === 'PATCH') {
+    MediBook\Controllers\AppointmentController::confirm($m[1]);
 } elseif (preg_match('#^/api/admin/appointments/([a-f0-9]+)/complete$#', $uri, $m) && $method === 'PATCH') {
     MediBook\Controllers\AppointmentController::complete($m[1]);
 } elseif (preg_match('#^/api/admin/appointments/([a-f0-9]+)/no-show$#', $uri, $m) && $method === 'PATCH') {
@@ -190,12 +192,12 @@ if (preg_match('#^/api/health$#', $uri) && $method === 'GET') {
 
 // Report routes
 } elseif (preg_match('#^/api/admin/reports/appointments-summary$#', $uri) && $method === 'GET') {
-    requireAdmin();
+    requireStaff();
     $start = $_GET['start'] ?? date('Y-m-d', strtotime('-30 days'));
     $end = $_GET['end'] ?? date('Y-m-d');
     echo json_encode(MediBook\Services\ReportService::appointmentsSummary($start, $end));
 } elseif (preg_match('#^/api/admin/reports/no-show-rate$#', $uri) && $method === 'GET') {
-    requireAdmin();
+    requireStaff();
     $start = $_GET['start'] ?? date('Y-m-d', strtotime('-30 days'));
     $end = $_GET['end'] ?? date('Y-m-d');
     echo json_encode(MediBook\Services\ReportService::noShowRate($start, $end));

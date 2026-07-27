@@ -219,6 +219,33 @@ class AppointmentController
         }
     }
 
+    public static function confirm(string $id): void
+    {
+        requireStaff();
+        Appointment::update($id, [
+            'status' => 'confirmed',
+            'confirmedAt' => new \MongoDB\BSON\UTCDateTime(),
+        ]);
+
+        $appointment = Appointment::findById($id);
+        $patient = $appointment ? Patient::findById($appointment['patientId']) : null;
+        $doctor = $appointment ? Doctor::findById($appointment['doctorId']) : null;
+        $department = $appointment ? Department::findById($appointment['departmentId']) : null;
+        if ($patient && $doctor) {
+            EmailService::sendAppointmentConfirmation(
+                $patient['email'],
+                $patient['firstName'],
+                "Dr. {$doctor['firstName']} {$doctor['lastName']}",
+                $department['name'] ?? $appointment['departmentId'],
+                $appointment['appointmentDate'],
+                $appointment['timeSlot'],
+                $id
+            );
+        }
+
+        echo json_encode(['message' => 'Appointment confirmed, patient notified']);
+    }
+
     public static function complete(string $id): void
     {
         requireStaff();
