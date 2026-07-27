@@ -16,13 +16,21 @@ function getMongoDB(): Database
             jsonError(500, 'MongoDB URI not configured');
         }
         try {
-            $client = new Client(MONGODB_URI, [], [
+            $uriOptions = [
+                'tls' => true,
+                'tlsCAFile' => '/etc/ssl/certs/ca-certificates.crt',
+            ];
+            $driverOptions = [
                 'typeMap' => [
                     'array' => 'array',
                     'document' => 'array',
                     'root' => 'array',
                 ],
-            ]);
+            ];
+            if (APP_ENV !== 'production') {
+                $uriOptions['tlsAllowInvalidCertificates'] = true;
+            }
+            $client = new Client(MONGODB_URI, $uriOptions, $driverOptions);
             $db = $client->selectDatabase('medibook');
         } catch (\Throwable $e) {
             jsonError(500, 'Database connection failed: ' . $e->getMessage());
