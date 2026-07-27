@@ -1,0 +1,513 @@
+========================================================================
+DESIGN AND IMPLEMENTATION OF A HOSPITAL APPOINTMENT BOOKING SYSTEM
+(Case Study: Delta State Teaching Hospital)
+MASTER CODEX / OPENCODE IMPLEMENTATION PROMPT (MongoDB version)
+========================================================================
+
+NOTE ON STACK CHANGE
+----------------------
+The approved abstract specifies PHP, MySQL, HTML, CSS, JavaScript, and
+Bootstrap. This prompt keeps everything exactly as approved EXCEPT it
+swaps MySQL for MongoDB, per your instruction. Bootstrap is kept since
+it's explicitly named in your already-approved abstract. If your
+supervisor asks why MongoDB instead of MySQL, a fair, honest
+justification is that appointment slots, doctor availability
+schedules, and patient records vary in shape (not every doctor has the
+same schedule structure, not every patient record needs the same
+optional fields), which a flexible document model handles cleanly —
+but if they'd rather you stick to the literal approved stack, tell me
+and I'll convert this back to MySQL.
+
+HOW TO USE THIS FILE
+---------------------
+Paste the "MASTER PROMPT" section into Codex/OpenCode (or Claude Code)
+as your first instruction, then build in the phases under "BUILD
+ORDER" — one phase at a time, testing before moving on.
+
+IMPORTANT CONSTRAINTS (READ BEFORE STARTING)
+-------------------------------------------------
+- Do NOT install, run, or require any database server locally on the
+  developer's machine. Use MongoDB Atlas (cloud) exclusively — no
+  local MongoDB installation, no Docker container running a database
+  for development or testing.
+- Do NOT set up or rely on any local mail server. Brevo must be used
+  strictly via its transactional HTTP API with an API key
+  (`BREVO_API_KEY`) — never SMTP, never PHPMailer-over-SMTP, never a
+  local mail setup.
+- Do NOT introduce any other local software installs beyond what's
+  strictly required to write and run the PHP application itself
+  (standard Composer packages needed for the app to function, e.g.
+  `mongodb/mongodb`, `vlucas/phpdotenv`, `firebase/php-jwt`). No local
+  dev databases, no bulky extra tooling, no downloading datasets or
+  binaries that aren't part of the running application.
+- Pull in Bootstrap via CDN link in the HTML/views rather than an
+  npm/build-step installation, to avoid adding local build tooling
+  that isn't necessary for this project's scope.
+- ONE UNAVOIDABLE TECHNICAL NOTE: connecting to MongoDB from PHP
+  requires the `mongodb` PHP extension (installed via PECL) to be
+  present in whatever environment actually RUNS the PHP code — this
+  is a runtime requirement of the language/driver, not a "local
+  database install." On Render, use a Docker-based PHP environment
+  where the `mongodb` extension is installed inside the Dockerfile
+  (in the deployment environment, not on the developer's personal
+  machine). Prefer testing the running app via deployment (Render) or
+  a cloud dev container/environment rather than installing PHP plus
+  the mongodb extension on the local machine.
+
+========================================================================
+MASTER PROMPT (paste this in)
+========================================================================
+
+You are building "MediBook" — a hospital appointment booking system
+for a Nigerian polytechnic/university final year project, using Delta
+State Teaching Hospital as the case study. The system replaces manual
+appointment booking (long waiting times, conflicts, poor record
+management, delays) with a computerized platform where patients
+register, log in, view available doctors, book appointments, and
+receive confirmations, while hospital administrators manage doctors,
+appointments, and reports. Follow this spec exactly, and follow the
+IMPORTANT CONSTRAINTS above without exception — nothing about this
+project should require installing a database, mail server, or other
+non-essential software on the developer's local machine. Build
+incrementally, one module at a time, confirming each works before
+moving to the next.
+
+PROJECT GOAL
+-------------
+A secure, reliable, user-friendly web platform automating the
+appointment scheduling process end-to-end: patient registration and
+login, doctor/department browsing, real-time availability-aware
+booking, appointment confirmation, and administrative reporting —
+minimizing paperwork and scheduling conflicts, and improving
+communication between patients and healthcare providers.
+
+TECH STACK (use exactly this — matches your approved abstract, with
+MongoDB swapped in for MySQL)
+-------------------------------------------------------------------
+  - PHP 8.2 (procedural or lightweight MVC structure)
+  - MongoDB Atlas (via the `mongodb/mongodb` Composer library) — NOT
+    MySQL/PDO
+  - HTML5, CSS3, Vanilla JavaScript
+  - Bootstrap (as named in your approved abstract) for responsive UI
+    components
+  - Brevo transactional HTTP API (cURL/axios POST) for email
+    verification, password reset, appointment confirmation, and
+    reminder emails — NOT SMTP, since Render blocks SMTP ports
+  - Deployment: Render (web service) + a Render Cron Job (or an
+    external trigger like cron-job.org hitting a protected endpoint)
+    for scheduled appointment-reminder checks
+  - Database hosting: MongoDB Atlas
+
+FOLDER STRUCTURE
+------------------
+medibook/
+  public/
+    index.php
+    assets/ (css/, js/, images/, vendor/bootstrap/)
+  src/
+    config/            (db.php — MongoDB client bootstrap, env.php)
+    models/             (Patient.php, Doctor.php, Department.php,
+                           StaffUser.php, Appointment.php,
+                           ScheduleException.php, ReminderLog.php)
+    controllers/
+    middleware/         (auth.php, rbac.php, csrf.php, rateLimit.php)
+    services/           (EmailService.php, AvailabilityService.php,
+                           ReminderService.php, ReportService.php)
+    utils/
+    cron/
+      send-reminders.php
+    views/             (plain PHP templates or partials, Bootstrap
+                          markup)
+  composer.json
+  .env.example
+  README.md
+
+DATABASE COLLECTIONS (MongoDB documents)
+--------------------------------------------
+patients
+  _id, firstName, lastName, email (unique), phone (unique), gender,
+  dateOfBirth, address, passwordHash, isEmailVerified,
+  createdAt, updatedAt, deletedAt (soft-delete for account closure)
+
+departments        (specializations — e.g. "Cardiology",
+                      "Pediatrics", "General Outpatient")
+  _id, name, description, createdAt, updatedAt
+
+doctors
+  _id, firstName, lastName, email, phone, departmentId (ref:
+  departments), bio, photoUrl, isActive: bool,
+  workingHours: [
+    { dayOfWeek: 0-6, startTime: "09:00", endTime: "16:00" }
+  ],   // the doctor's normal weekly schedule
+  slotDurationMinutes: number (e.g. 30),  // how long each bookable
+                                            // appointment slot is
+  createdAt, updatedAt
+
+scheduleExceptions   (a doctor's leave/unavailable dates, or a
+                       special extra clinic day — kept as its OWN
+                       collection so a doctor's whole workingHours
+                       array doesn't need editing for a one-off change)
+  _id, doctorId (ref: doctors), date, type: "unavailable"|
+  "extra_availability", overrideStartTime, overrideEndTime, reason,
+  createdAt
+
+staffUsers        (admin, front-desk/receptionist)
+  _id, name, email (unique), passwordHash,
+  role: "admin"|"front_desk", createdAt, updatedAt
+
+appointments
+  _id, patientId (ref: patients), doctorId (ref: doctors),
+  departmentId (ref: departments),
+  appointmentDate (Date, date-only portion),
+  timeSlot (e.g. "10:00-10:30" — string or structured
+  { start, end }),
+  status: "pending"|"confirmed"|"completed"|"cancelled"|"no_show",
+  reasonForVisit, bookedByType: "patient"|"front_desk" (front-desk
+  staff can book on behalf of walk-in patients),
+  bookedByStaffId (ref: staffUsers, nullable),
+  confirmedAt, cancelledAt, cancelReason, completedAt,
+  createdAt, updatedAt
+
+reminderLogs      (prevents duplicate reminder emails — same pattern
+                    as any scheduled-job system)
+  _id, appointmentId (ref: appointments), sentAt,
+  reminderType: "24h_before"|"2h_before", status: "sent"|"failed"
+
+Indexes to create in MongoDB Atlas:
+  - patients.email (unique), patients.phone (unique)
+  - staffUsers.email (unique)
+  - appointments: UNIQUE compound index on (doctorId, appointmentDate,
+    timeSlot) EXCLUDING cancelled status — MongoDB doesn't support a
+    partial-unique-index-with-status-exclusion quite as simply as SQL,
+    so implement double-booking prevention primarily at the
+    application/service layer (check-then-insert inside a
+    transaction, or use MongoDB's `findOneAndUpdate` with an
+    upsert-style guard) AND add a compound index on (doctorId,
+    appointmentDate, timeSlot) for fast lookup even if it isn't
+    strictly unique — document this design decision clearly in
+    Chapter 3
+  - appointments: compound index on (patientId, appointmentDate) for
+    a patient's own appointment history queries
+  - scheduleExceptions: compound index on (doctorId, date)
+
+CORE FEATURES — COVER EVERY SCENARIO BELOW
+----------------------------------------------
+
+1. AUTHENTICATION
+   - Patient register/login, bcrypt password hashing
+   - Email verification via Brevo before booking is allowed (or at
+     minimum before confirmation emails are trusted to reach them)
+   - Staff (admin/front-desk) login, separate from patient login
+   - Password reset flow with a single-use, time-limited token
+   - Rate limiting on login/register/password-reset endpoints
+   - CSRF protection on all state-changing form submissions
+
+2. DEPARTMENTS & DOCTOR DIRECTORY
+   - Admin manages departments/specializations
+   - Admin manages doctor profiles: bio, photo, department, weekly
+     workingHours, slotDurationMinutes, active/inactive status
+   - Patients can browse doctors by department, view bio and general
+     weekly availability pattern before booking
+   - Deactivating a doctor (e.g. they've left the hospital) must NOT
+     delete their historical appointment records — mark inactive, keep
+     history intact, and prevent new bookings against them
+
+3. AVAILABILITY-AWARE BOOKING (the core feature — cover every
+   scenario)
+   - When a patient selects a doctor and a date, compute the list of
+     BOOKABLE time slots by:
+     a. Starting from the doctor's workingHours for that day of week
+     b. Slicing into slotDurationMinutes chunks
+     c. Removing any slot already taken by an existing non-cancelled
+        appointment for that doctor/date
+     d. Removing the whole day if a scheduleExceptions entry marks it
+        "unavailable" (leave/holiday), or applying an
+        "extra_availability" override if present
+     e. Removing past time slots if the selected date is today
+   - Never let the frontend alone decide which slots are free — the
+     backend must re-validate availability at the moment of booking
+     submission (race condition: two patients viewing the same
+     "available" slot at once) and reject with a clear "this slot was
+     just taken, please choose another" error rather than creating a
+     double-booking
+   - Booking creates an appointment with status "pending" (or
+     "confirmed" immediately if you choose auto-confirm — document
+     your choice; a hospital front desk may want a manual confirmation
+     step for certain departments)
+   - On successful booking, send a confirmation email via Brevo
+     with the appointment details (doctor, department, date, time,
+     a cancellation link/reference)
+
+4. APPOINTMENT MANAGEMENT (patient side)
+   - View upcoming and past appointments
+   - Cancel an appointment — enforce a minimum notice window (e.g. no
+     cancellation within 2 hours of the appointment time) with a clear
+     message if the window has passed, encouraging them to call the
+     hospital directly instead
+   - Reschedule: implemented as cancel-old + book-new against the
+     availability engine (reuses the same validation logic, avoids a
+     separate "reschedule" code path with its own bugs)
+   - View department/doctor details again from an existing appointment
+
+5. APPOINTMENT MANAGEMENT (staff side)
+   - Front-desk can book an appointment on behalf of a walk-in patient
+     who isn't registered online yet — either look up an existing
+     patient record by phone/name or quickly create a minimal patient
+     record inline
+   - Admin/front-desk dashboard: list/search/filter all appointments by
+     date, doctor, department, status, patient name
+   - Mark an appointment "completed" after the visit, or "no_show" if
+     the patient didn't turn up — this status distinction matters for
+     the no-show reporting feature below
+   - Cancel an appointment on the hospital's side (e.g. doctor
+     emergency) -> this MUST trigger a notification email to the
+     affected patient(s), not just a silent status change
+   - Bulk-cancel/reassign all of one doctor's appointments for a given
+     date (e.g. doctor called in sick) — notify every affected patient
+     in one operation, don't make staff cancel one by one
+
+6. REMINDERS (scheduled job)
+   - A scheduled job (Render Cron Job or an external trigger hitting a
+     protected `/cron/send-reminders` endpoint every 15-30 minutes)
+     scans for upcoming confirmed appointments crossing a reminder
+     threshold (e.g. 24 hours before, 2 hours before) and sends a
+     reminder email via Brevo
+   - Log every sent reminder in reminderLogs immediately so a cron
+     overlap/retry never sends a duplicate
+   - Skip reminders for appointments already cancelled/completed by
+     the time the job runs
+
+7. REPORTING (the abstract's stated "reports efficiently" feature)
+   - Appointments per doctor / per department over a date range
+   - No-show rate per doctor/department (no_show count / total
+     appointments count)
+   - Busiest time slots / days (useful operational insight for the
+     hospital)
+   - Cancellation rate and common cancellation reasons
+   - Exportable as CSV/PDF for hospital administrators who need
+     offline copies
+
+8. RESPONSIVE UI (Bootstrap, per the approved abstract)
+   - Patient-facing pages: register/login, doctor directory (filter by
+     department), booking flow (date picker -> available slots ->
+     confirm), my appointments, profile
+   - Staff-facing pages: admin dashboard, doctor/department management,
+     appointments list with filters, reports view
+   - Mobile-responsive using Bootstrap's grid/components — test at
+     common breakpoints
+
+EDGE CASES TO EXPLICITLY HANDLE
+------------------------------------
+  - Two patients attempt to book the exact same doctor/date/slot at
+    the same moment -> backend re-validation at submission time
+    rejects the second one with a clear, friendly error, not a silent
+    duplicate or a raw DB error
+  - A doctor's workingHours change AFTER appointments already exist
+    for future dates under the old hours -> already-booked
+    appointments remain valid (they were booked against real
+    availability at the time); only NEW bookings use the updated
+    hours. Don't retroactively invalidate existing appointments
+    because a schedule changed later
+  - A doctor is marked on leave (scheduleExceptions) for a date that
+    already has confirmed appointments -> this requires the bulk
+    cancel/reassign flow (section 5) with mandatory patient
+    notification, not a silent conflict
+  - Patient tries to book an appointment for a past date/time -> reject
+    before it reaches the availability engine, with a clear message
+  - Patient cancels within the no-cancellation window -> block with a
+    clear message rather than silently allowing or silently failing
+  - Front-desk creates a walk-in booking for a patient who turns out to
+    already have an account (duplicate phone/email) -> search/match
+    existing patient records before creating a new one, to avoid
+    fragmenting one person's history across two patient documents
+  - Appointment marked "completed" or "no_show" retroactively edited
+    by mistake -> allow staff correction but keep it auditable (a
+    simple updatedAt + who-changed-it note is sufficient scope for
+    this project; a full audit log is optional here since this system
+    is lower-stakes than an academic records/grading system)
+  - Very long doctor bio/notes -> truncate with "read more" in list
+    views rather than breaking layout
+  - Department deleted while doctors are still assigned to it -> block
+    deletion (or require reassigning doctors first), never silently
+    orphan doctor records
+  - Patient account soft-deleted (account closure) while they have
+    future appointments -> either auto-cancel those appointments (with
+    notification) or block account deletion until they're resolved —
+    pick one, document it, and make sure it's not just left dangling
+
+API/ROUTES (high level)
+--------------------------
+POST   /api/auth/patient/register
+POST   /api/auth/patient/verify-email
+POST   /api/auth/patient/login
+POST   /api/auth/staff/login
+POST   /api/auth/logout
+POST   /api/auth/forgot-password
+POST   /api/auth/reset-password
+GET    /api/departments
+POST   /api/departments                (admin)
+GET    /api/doctors                     (filterable by department)
+POST   /api/doctors                       (admin)
+PATCH  /api/doctors/:id                    (admin)
+POST   /api/doctors/:id/schedule-exceptions (admin)
+GET    /api/doctors/:id/availability        (query: date -> returns
+                                              bookable slots)
+GET    /api/appointments/mine                (patient's own)
+POST   /api/appointments                      (book — re-validates
+                                                availability server-
+                                                side)
+PATCH  /api/appointments/:id/cancel
+PATCH  /api/appointments/:id/complete           (staff)
+PATCH  /api/appointments/:id/no-show             (staff)
+GET    /api/admin/appointments                    (staff — filterable)
+POST   /api/admin/appointments                      (front-desk
+                                                       walk-in booking)
+PATCH  /api/admin/appointments/bulk-cancel            (staff — e.g.
+                                                        doctor sick day)
+GET    /api/admin/reports/appointments-summary
+GET    /api/admin/reports/no-show-rate
+GET    /api/admin/reports/export.csv
+GET    /cron/send-reminders                             (protected)
+
+ENVIRONMENT VARIABLES (.env.example)
+-----------------------------------------
+MONGODB_URI=
+JWT_SECRET=
+BREVO_API_KEY=
+CRON_SECRET=
+APP_URL=
+APP_ENV=
+
+BUILD ORDER (build in this exact order, one phase at a time)
+------------------------------------------------------------------
+Phase 1: PHP + MongoDB Atlas connection bootstrap, Patient + StaffUser
+         models, register/login/session auth (no appointments yet)
+Phase 2: Email verification + password reset via Brevo
+Phase 3: Departments + Doctors CRUD (admin), doctor directory browsing
+         (patient-facing)
+Phase 4: AvailabilityService — compute bookable slots from
+         workingHours + existing appointments + scheduleExceptions;
+         unit-test this thoroughly with hand-picked scenarios before
+         wiring into the booking endpoint
+Phase 5: Booking flow (POST /api/appointments) with server-side
+         re-validation at submission time, confirmation email via
+         Brevo
+Phase 6: Patient appointment management (view/cancel/reschedule) with
+         cancellation-window enforcement
+Phase 7: Staff appointment management (dashboard, walk-in booking,
+         complete/no-show marking, bulk-cancel with notification)
+Phase 8: Reminder cron job (timezone not a major concern here since
+         it's single-hospital/single-timezone, but still compute
+         reminder thresholds correctly relative to appointment
+         datetime) + reminderLogs dedup
+Phase 9: Reporting (appointments summary, no-show rate, CSV export)
+Phase 10: Bootstrap-based responsive UI pass across breakpoints, full
+          edge-case hardening, deployment to Render + Render Cron Job
+          + MongoDB Atlas
+
+Do not move to the next phase until the current one is fully working
+and testable end-to-end.
+
+========================================================================
+STEP-BY-STEP EXECUTION GUIDE (for you, the developer)
+========================================================================
+
+1. SET UP ACCOUNTS/SERVICES FIRST (all cloud, nothing local)
+   - MongoDB Atlas cluster (free tier), create the indexes listed
+     above once collections exist
+   - Brevo account + API key (BREVO_API_KEY — used for every email,
+     never SMTP)
+   - Render account (web service + Cron Job, or use an external
+     scheduler like cron-job.org if Render's cron isn't on your plan)
+
+2. INITIALIZE THE PROJECT
+   - `composer require mongodb/mongodb vlucas/phpdotenv
+     firebase/php-jwt`
+   - Write a `Dockerfile` that installs PHP, Composer, and the
+     `mongodb` PECL extension, so Render's build produces a working
+     runtime without needing the extension on your own machine
+   - Pull in Bootstrap via CDN link in your views — no local
+     npm/build step needed
+   - Set up the folder structure above
+
+3. FEED PHASE 1 OF THE MASTER PROMPT TO CODEX/OPENCODE
+   Test registration/login by deploying early to Render (or running
+   inside a cloud dev container) rather than installing PHP + the
+   mongodb extension locally, per the constraints above.
+
+4. WORK THROUGH PHASES 2–10 SEQUENTIALLY
+   Test the availability engine (Phase 4) especially carefully with
+   manual scenarios (a fully-booked day, a doctor on leave, a same-day
+   booking near closing time) before wiring it into the live booking
+   flow.
+
+5. WRITE YOUR FIVE CHAPTERS ALONGSIDE THE BUILD
+   - Chapter 1: Introduction — long waiting times, appointment
+     conflicts, poor record management, delays in accessing healthcare
+     services under the manual system, as the problem statement,
+     objectives, scope, significance
+   - Chapter 2: Literature Review — existing hospital appointment
+     systems and their features, healthcare scheduling algorithms,
+     justification for MongoDB's document model over MySQL for this
+     domain (variable doctor schedules, optional patient fields)
+   - Chapter 3: Methodology & System Design — SDLC model used, use
+     case diagram (Patient, Doctor [profile only, likely no login],
+     Front-Desk, Admin actors), document-relationship diagram from the
+     schema above, sequence diagram for the booking flow (slot
+     computation -> submission -> server-side re-validation ->
+     confirmation email), architecture diagram (Browser <-> PHP/Render
+     <-> MongoDB Atlas, plus the scheduled reminder job path)
+   - Chapter 4: Implementation & Testing — screenshots of each module,
+     a demonstrated double-booking attempt correctly rejected, a
+     demonstrated bulk-cancel-with-notification flow, your reports
+     view with real sample data
+   - Chapter 5: Summary, Conclusion, Recommendations — be candid about
+     scope choices (e.g. doctors don't have their own login in this
+     version — their schedule is admin-managed; note this as a
+     reasonable scope boundary and a future-work item if you want)
+
+6. TESTING CHECKLIST — RUN THESE SCENARIOS AND SCREENSHOT THE RESULTS
+   - Book a slot, then attempt to book the SAME doctor/date/slot again
+     -> confirm a clear rejection, not a duplicate appointment
+   - Mark a doctor's date as "unavailable" via scheduleExceptions after
+     appointments already exist for that date -> confirm the required
+     bulk-cancel-with-notification flow is the only path forward, not
+     a silent conflict
+   - Attempt to book a past date/time -> confirm it's rejected before
+     reaching the availability engine
+   - Cancel an appointment within the no-cancellation window -> confirm
+     it's blocked with a clear message
+   - Cancel an appointment outside the window -> confirm it succeeds
+     and the slot becomes bookable again for other patients
+   - Manually trigger the reminder cron endpoint twice for the same
+     appointment/window -> confirm only one reminder email is sent
+   - Mark an appointment "no_show" -> confirm it correctly appears in
+     the no-show rate report
+   - Front-desk books a walk-in for a phone number that matches an
+     existing patient -> confirm it links to the existing record
+     rather than creating a duplicate patient
+
+========================================================================
+NOTES
+========================================================================
+- The availability-computation engine (workingHours + existing
+  appointments + scheduleExceptions -> bookable slots, re-validated
+  server-side at submission time) is your strongest, most examinable
+  piece of logic — be ready to walk through it step by step in your
+  defense, especially the double-booking race-condition handling.
+- Be upfront in Chapter 3 about the MongoDB unique-index limitation
+  noted in the schema section (partial uniqueness excluding cancelled
+  appointments isn't as clean as it would be in SQL) and that you
+  compensate with application-layer validation — this kind of honest
+  tradeoff discussion reads as rigor, not a weakness, to examiners.
+- Bulk-cancel-with-mandatory-notification for a doctor's sick day is a
+  small feature that demonstrates real-world hospital operations
+  awareness — don't skip it even though it's not the flashiest part of
+  the system.
+- Everything in this project runs against cloud services (MongoDB
+  Atlas, Brevo, Render) by design — the only unavoidable local
+  requirement is a PHP runtime capable of loading the `mongodb`
+  extension if you ever want to run the app outside of Render/a cloud
+  container; prefer testing via deployment or a cloud dev environment
+  over installing that locally.
+========================================================================
