@@ -50,25 +50,9 @@ class AppointmentController
             'status' => 'pending',
         ]);
 
-        $doctor = Doctor::findById($input['doctorId']);
-        $department = Department::findById($input['departmentId']);
-        $patientData = Patient::findById($patient['id']);
-
-        if ($doctor && $patientData && $department) {
-            EmailService::sendAppointmentConfirmation(
-                $patientData['email'],
-                $patientData['firstName'],
-                "Dr. {$doctor['firstName']} {$doctor['lastName']}",
-                $department['name'],
-                $input['appointmentDate'],
-                $input['timeSlot'],
-                $appointmentId
-            );
-        }
-
         http_response_code(201);
         echo json_encode([
-            'message' => 'Appointment booked successfully',
+            'message' => 'Appointment request submitted. Awaiting staff confirmation.',
             'id' => $appointmentId,
         ]);
     }

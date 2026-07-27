@@ -399,7 +399,7 @@ if (document.getElementById('bookingForm')) {
                     method: 'POST',
                     body: JSON.stringify(data),
                 });
-                showToast('Appointment booked successfully! Check your email for confirmation.');
+                showToast('Appointment request submitted. Awaiting staff confirmation.');
             }
             setTimeout(() => window.location.href = '/my-appointments', 1000);
         } catch (err) {
