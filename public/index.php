@@ -59,6 +59,55 @@ if (preg_match('#^/api/health$#', $uri) && $method === 'GET') {
         'php_version' => PHP_VERSION,
     ]);
     exit;
+} elseif (preg_match('#^/api/seed$#', $uri) && $method === 'POST') {
+    if (empty($_GET['secret']) || $_GET['secret'] !== CRON_SECRET) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Invalid secret']);
+        exit;
+    }
+    try {
+        $db = getMongoDB();
+        foreach (['patients', 'doctors', 'departments', 'staffUsers', 'appointments', 'scheduleExceptions', 'reminderLogs', 'rateLimits'] as $col) {
+            $db->selectCollection($col)->drop();
+        }
+
+        $deptIds = [];
+        $departments = [
+            ['name' => 'Cardiology', 'description' => 'Heart and cardiovascular system specialists'],
+            ['name' => 'Pediatrics', 'description' => 'Medical care for infants, children, and adolescents'],
+            ['name' => 'General Outpatient', 'description' => 'General medical consultations and treatments'],
+            ['name' => 'Orthopedics', 'description' => 'Bone, joint, and muscle specialists'],
+            ['name' => 'Obstetrics & Gynecology', 'description' => 'Women\'s health and reproductive medicine'],
+            ['name' => 'Dermatology', 'description' => 'Skin, hair, and nail specialists'],
+            ['name' => 'Neurology', 'description' => 'Brain and nervous system specialists'],
+            ['name' => 'Radiology', 'description' => 'Medical imaging and diagnosis'],
+        ];
+        foreach ($departments as $d) {
+            $deptIds[$d['name']] = MediBook\Models\Department::create($d);
+        }
+
+        $doctors = [
+            ['firstName' => 'Chukwudi', 'lastName' => 'Okonkwo', 'email' => 'chukwudi.okonkwo@medibook.app', 'phone' => '08010000001', 'departmentId' => $deptIds['Cardiology'], 'bio' => 'Senior cardiologist with 15 years of experience in interventional cardiology.', 'slotDurationMinutes' => 30, 'isActive' => true, 'workingHours' => [['dayOfWeek' => 1, 'startTime' => '08:00', 'endTime' => '16:00'], ['dayOfWeek' => 2, 'startTime' => '08:00', 'endTime' => '16:00'], ['dayOfWeek' => 3, 'startTime' => '08:00', 'endTime' => '16:00'], ['dayOfWeek' => 4, 'startTime' => '08:00', 'endTime' => '16:00'], ['dayOfWeek' => 5, 'startTime' => '08:00', 'endTime' => '14:00']]],
+            ['firstName' => 'Amara', 'lastName' => 'Okafor', 'email' => 'amara.okafor@medibook.app', 'phone' => '08010000002', 'departmentId' => $deptIds['Pediatrics'], 'bio' => 'Consultant pediatrician specializing in neonatal care.', 'slotDurationMinutes' => 20, 'isActive' => true, 'workingHours' => [['dayOfWeek' => 1, 'startTime' => '09:00', 'endTime' => '17:00'], ['dayOfWeek' => 2, 'startTime' => '09:00', 'endTime' => '17:00'], ['dayOfWeek' => 3, 'startTime' => '09:00', 'endTime' => '17:00'], ['dayOfWeek' => 4, 'startTime' => '09:00', 'endTime' => '17:00'], ['dayOfWeek' => 5, 'startTime' => '09:00', 'endTime' => '15:00']]],
+            ['firstName' => 'Kelechi', 'lastName' => 'Nwachukwu', 'email' => 'kelechi.nwachukwu@medibook.app', 'phone' => '08010000003', 'departmentId' => $deptIds['General Outpatient'], 'bio' => 'General practitioner providing comprehensive primary care.', 'slotDurationMinutes' => 15, 'isActive' => true, 'workingHours' => [['dayOfWeek' => 0, 'startTime' => '10:00', 'endTime' => '14:00'], ['dayOfWeek' => 1, 'startTime' => '08:00', 'endTime' => '18:00'], ['dayOfWeek' => 2, 'startTime' => '08:00', 'endTime' => '18:00'], ['dayOfWeek' => 3, 'startTime' => '08:00', 'endTime' => '18:00'], ['dayOfWeek' => 4, 'startTime' => '08:00', 'endTime' => '18:00'], ['dayOfWeek' => 5, 'startTime' => '08:00', 'endTime' => '16:00']]],
+            ['firstName' => 'Ngozi', 'lastName' => 'Eze', 'email' => 'ngozi.eze@medibook.app', 'phone' => '08010000004', 'departmentId' => $deptIds['Orthopedics'], 'bio' => 'Orthopedic surgeon focused on sports injuries.', 'slotDurationMinutes' => 30, 'isActive' => true, 'workingHours' => [['dayOfWeek' => 1, 'startTime' => '09:00', 'endTime' => '15:00'], ['dayOfWeek' => 2, 'startTime' => '09:00', 'endTime' => '15:00'], ['dayOfWeek' => 3, 'startTime' => '09:00', 'endTime' => '15:00'], ['dayOfWeek' => 4, 'startTime' => '09:00', 'endTime' => '15:00']]],
+        ];
+        foreach ($doctors as $d) {
+            MediBook\Models\Doctor::create($d);
+        }
+
+        MediBook\Models\StaffUser::create(['name' => 'Admin User', 'email' => 'admin@medibook.app', 'password' => 'admin123', 'role' => 'admin']);
+        MediBook\Models\StaffUser::create(['name' => 'Front Desk User', 'email' => 'frontdesk@medibook.app', 'password' => 'front123', 'role' => 'front_desk']);
+
+        $db->selectCollection('rateLimits')->createIndex(['key' => 1, 'createdAt' => 1], ['expireAfterSeconds' => 300]);
+
+        echo json_encode(['message' => 'Database seeded successfully']);
+    } catch (\Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['error' => $e->getMessage()]);
+    }
+    exit;
+
 } elseif (preg_match('#^/api/health/db$#', $uri) && $method === 'GET') {
     try {
         $collections = getMongoDB()->listCollections();
