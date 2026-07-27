@@ -282,10 +282,14 @@ async function loadDoctorsList() {
     }
 }
 
+let rescheduleId = null;
+
 if (document.getElementById('bookDepartment')) {
     loadDepartments('bookDepartment');
     const params = new URLSearchParams(window.location.search);
-    if (params.get('doctor')) {
+    if (params.get('reschedule')) {
+        loadAppointmentForReschedule(params.get('reschedule'));
+    } else if (params.get('doctor')) {
         setTimeout(() => {
             document.getElementById('bookDoctor').value = params.get('doctor');
             loadTimeSlots();
@@ -297,6 +301,36 @@ if (document.getElementById('bookDepartment')) {
     });
     document.getElementById('bookDoctor').addEventListener('change', loadTimeSlots);
     document.getElementById('bookDate').addEventListener('change', loadTimeSlots);
+}
+
+async function loadAppointmentForReschedule(id) {
+    try {
+        const appt = await api('/api/appointments/' + id);
+        rescheduleId = id;
+        document.getElementById('bookSubmit').textContent = 'Reschedule Appointment';
+        if (appt.departmentId) {
+            await loadDepartments('bookDepartment', appt.departmentId);
+        }
+        if (appt.doctorId) {
+            await loadDoctors('bookDoctor', appt.departmentId, appt.doctorId);
+        }
+        if (appt.appointmentDate) {
+            document.getElementById('bookDate').value = appt.appointmentDate;
+            await loadTimeSlots();
+            if (appt.timeSlot) {
+                document.querySelectorAll('.slot-btn').forEach(b => {
+                    if (b.textContent === appt.timeSlot) {
+                        b.click();
+                    }
+                });
+            }
+        }
+        if (appt.reasonForVisit) {
+            document.getElementById('bookReason').value = appt.reasonForVisit;
+        }
+    } catch (err) {
+        showToast('Could not load appointment for reschedule', 'danger');
+    }
 }
 
 let selectedSlot = null;
@@ -348,20 +382,30 @@ if (document.getElementById('bookingForm')) {
             timeSlot: selectedSlot,
             reasonForVisit: document.getElementById('bookReason').value,
         };
+        const isReschedule = !!rescheduleId;
         const btn = document.getElementById('bookSubmit');
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Booking...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> ' + (isReschedule ? 'Rescheduling...' : 'Booking...');
         try {
-            const result = await api('/api/appointments', {
-                method: 'POST',
-                body: JSON.stringify(data),
-            });
-            showToast('Appointment booked successfully! Check your email for confirmation.');
+            let result;
+            if (isReschedule) {
+                result = await api('/api/appointments/' + rescheduleId + '/reschedule', {
+                    method: 'PATCH',
+                    body: JSON.stringify(data),
+                });
+                showToast('Appointment rescheduled successfully!');
+            } else {
+                result = await api('/api/appointments', {
+                    method: 'POST',
+                    body: JSON.stringify(data),
+                });
+                showToast('Appointment booked successfully! Check your email for confirmation.');
+            }
             setTimeout(() => window.location.href = '/my-appointments', 1000);
         } catch (err) {
             showToast(err.message, 'danger');
             btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-check-circle"></i> Confirm Booking';
+            btn.innerHTML = '<i class="bi bi-check-circle"></i> ' + (isReschedule ? 'Reschedule Appointment' : 'Confirm Booking');
         }
     });
 }
@@ -390,7 +434,7 @@ async function loadMyAppointments() {
             tr.innerHTML = `
                 <td>${a.appointmentDate}</td>
                 <td>${a.timeSlot}</td>
-                <td>${a.doctorId || 'N/A'}</td>
+                <td>${a.doctorName || a.doctorId || 'N/A'}</td>
                 <td><span class="badge bg-${statusBadge[a.status] || 'secondary'}">${a.status}</span></td>
                 <td>
                     ${(a.status === 'confirmed' || a.status === 'pending') ? `
@@ -474,8 +518,8 @@ async function loadAdminAppointments() {
         const statusBadge = { pending: 'warning', confirmed: 'success', completed: 'secondary', cancelled: 'danger', no_show: 'dark' };
         tbody.innerHTML = appointments.map(a => `
             <tr>
-                <td>${a.patientId || 'N/A'}</td>
-                <td>${a.doctorId || 'N/A'}</td>
+                <td>${a.patientName || a.patientId || 'N/A'}</td>
+                <td>${a.doctorName || a.doctorId || 'N/A'}</td>
                 <td>${a.appointmentDate}</td>
                 <td>${a.timeSlot}</td>
                 <td><span class="badge bg-${statusBadge[a.status] || 'secondary'}">${a.status}</span></td>

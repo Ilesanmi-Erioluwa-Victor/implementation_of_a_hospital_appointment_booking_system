@@ -163,6 +163,8 @@ if (preg_match('#^/api/health$#', $uri) && $method === 'GET') {
 // Appointment routes (patient)
 } elseif (preg_match('#^/api/appointments/mine$#', $uri) && $method === 'GET') {
     MediBook\Controllers\AppointmentController::myAppointments();
+} elseif (preg_match('#^/api/appointments/([a-f0-9]+)$#', $uri, $m) && $method === 'GET') {
+    MediBook\Controllers\AppointmentController::getAppointment($m[1]);
 } elseif (preg_match('#^/api/appointments$#', $uri) && $method === 'POST') {
     MediBook\Controllers\AppointmentController::book();
 } elseif (preg_match('#^/api/appointments/([a-f0-9]+)/cancel$#', $uri, $m) && $method === 'PATCH') {

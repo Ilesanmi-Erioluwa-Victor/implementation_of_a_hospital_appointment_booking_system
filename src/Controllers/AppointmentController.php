@@ -47,7 +47,7 @@ class AppointmentController
             'timeSlot' => $input['timeSlot'],
             'reasonForVisit' => $input['reasonForVisit'] ?? '',
             'bookedByType' => 'patient',
-            'status' => 'confirmed',
+            'status' => 'pending',
         ]);
 
         $doctor = Doctor::findById($input['doctorId']);
@@ -83,9 +83,26 @@ class AppointmentController
         $appointments = Appointment::findByPatient($patient['id'], $filter);
         $result = array_map(function ($a) {
             $a['_id'] = (string) $a['_id'];
+            $doctor = Doctor::findById($a['doctorId']);
+            $a['doctorName'] = $doctor ? "Dr. {$doctor['firstName']} {$doctor['lastName']}" : $a['doctorId'];
             return $a;
         }, $appointments);
         echo json_encode($result);
+    }
+
+    public static function getAppointment(string $id): void
+    {
+        $patient = requirePatient();
+        $appointment = Appointment::findById($id);
+        if (!$appointment || $appointment['patientId'] !== $patient['id']) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Appointment not found']);
+            return;
+        }
+        $appointment['_id'] = (string) $appointment['_id'];
+        $doctor = Doctor::findById($appointment['doctorId']);
+        $appointment['doctorName'] = $doctor ? "Dr. {$doctor['firstName']} {$doctor['lastName']}" : $appointment['doctorId'];
+        echo json_encode($appointment);
     }
 
     public static function cancel(string $id): void
@@ -186,7 +203,7 @@ class AppointmentController
                 'timeSlot' => $input['timeSlot'],
                 'reasonForVisit' => $input['reasonForVisit'] ?? $appointment['reasonForVisit'] ?? '',
                 'bookedByType' => 'patient',
-                'status' => 'confirmed',
+                'status' => 'pending',
             ]);
 
             echo json_encode([
@@ -320,6 +337,10 @@ class AppointmentController
         $appointments = Appointment::findAll($filter);
         $result = array_map(function ($a) {
             $a['_id'] = (string) $a['_id'];
+            $doctor = Doctor::findById($a['doctorId']);
+            $a['doctorName'] = $doctor ? "Dr. {$doctor['firstName']} {$doctor['lastName']}" : $a['doctorId'];
+            $patient = Patient::findById($a['patientId']);
+            $a['patientName'] = $patient ? "{$patient['firstName']} {$patient['lastName']}" : $a['patientId'];
             return $a;
         }, $appointments);
         echo json_encode($result);
@@ -377,7 +398,7 @@ class AppointmentController
             'reasonForVisit' => $input['reasonForVisit'] ?? '',
             'bookedByType' => 'front_desk',
             'bookedByStaffId' => $staff['id'],
-            'status' => 'confirmed',
+            'status' => 'pending',
         ]);
 
         http_response_code(201);
