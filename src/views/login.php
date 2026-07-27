@@ -1,6 +1,10 @@
 <div class="container">
     <div class="auth-card card p-4">
-        <h3 class="text-center mb-4"><i class="bi bi-box-arrow-in-right"></i> Patient Login</h3>
+        <h3 class="text-center mb-4"><i class="bi bi-person"></i> Patient Login</h3>
+        <div class="alert alert-info small py-2">
+            <i class="bi bi-info-circle"></i> This login is for registered patients only.
+            Staff should use the <a href="/admin" class="alert-link">staff login</a>.
+        </div>
         <form id="loginForm">
             <div class="mb-3">
                 <label class="form-label">Email address</label>
