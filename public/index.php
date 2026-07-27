@@ -59,7 +59,7 @@ if (preg_match('#^/api/health$#', $uri) && $method === 'GET') {
         'php_version' => PHP_VERSION,
     ]);
     exit;
-} elseif (preg_match('#^/api/seed$#', $uri) && $method === 'POST') {
+} elseif (preg_match('#^/api/seed$#', $uri) && in_array($method, ['GET', 'POST'])) {
     if (empty($_GET['secret']) || $_GET['secret'] !== CRON_SECRET) {
         http_response_code(403);
         echo json_encode(['error' => 'Invalid secret']);
