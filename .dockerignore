@@ -1,5 +1,6 @@
 vendor/
 .env
+.env.example
 .git/
 .gitignore
 .vscode/
