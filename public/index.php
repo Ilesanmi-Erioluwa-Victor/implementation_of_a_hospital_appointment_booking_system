@@ -147,6 +147,8 @@ if (preg_match('#^/api/health$#', $uri) && $method === 'GET') {
 // Doctor routes
 } elseif (preg_match('#^/api/doctors$#', $uri) && $method === 'GET') {
     MediBook\Controllers\DoctorController::index();
+} elseif (preg_match('#^/api/doctors/([a-f0-9]+)$#', $uri, $m) && $method === 'GET') {
+    MediBook\Controllers\DoctorController::show($m[1]);
 } elseif (preg_match('#^/api/doctors/([a-f0-9]+)$#', $uri, $m) && $method === 'PATCH') {
     MediBook\Controllers\DoctorController::update($m[1]);
 } elseif (preg_match('#^/api/doctors/([a-f0-9]+)/availability$#', $uri, $m) && $method === 'GET') {

@@ -646,9 +646,22 @@ async function loadDoctorsTable() {
     } catch (err) { showToast(err.message, 'danger'); }
 }
 
-function editDoctor(id) {
-    showToast('Edit functionality - click Save after changes', 'info');
-    document.getElementById('doctorId').value = id;
+async function editDoctor(id) {
+    try {
+        const doctor = await api('/api/doctors/' + id);
+        document.getElementById('doctorId').value = id;
+        document.getElementById('docFirstName').value = doctor.firstName || '';
+        document.getElementById('docLastName').value = doctor.lastName || '';
+        document.getElementById('docEmail').value = doctor.email || '';
+        document.getElementById('docPhone').value = doctor.phone || '';
+        document.getElementById('docBio').value = doctor.bio || '';
+        document.getElementById('docSlotDuration').value = doctor.slotDurationMinutes || 30;
+        document.getElementById('docActive').value = doctor.isActive ? '1' : '';
+        await loadDepartments('docDepartment', doctor.departmentId);
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('doctorModal')).show();
+    } catch (err) {
+        showToast('Failed to load doctor details', 'danger');
+    }
 }
 
 async function saveDoctor() {
@@ -673,6 +686,9 @@ async function saveDoctor() {
             await api('/api/admin/doctors', { method: 'POST', body: JSON.stringify(data) });
             showToast('Doctor added');
         }
+        setLoading(btn, false, 'Save');
+        document.getElementById('doctorId').value = '';
+        document.getElementById('doctorForm').reset();
         bootstrap.Modal.getInstance(document.getElementById('doctorModal')).hide();
         loadDoctorsTable();
     } catch (err) { setLoading(btn, false, 'Save'); showToast(err.message, 'danger'); }
@@ -692,6 +708,7 @@ if (document.getElementById('departmentForm')) {
             showToast('Department added');
             document.getElementById('deptName').value = '';
             document.getElementById('deptDesc').value = '';
+            setLoading(btn, false, 'Add Department');
             loadDepartmentsTable();
         } catch (err) { setLoading(btn, false, 'Add Department'); showToast(err.message, 'danger'); }
     });

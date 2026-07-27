@@ -39,6 +39,18 @@ class DoctorController
         echo json_encode(['message' => 'Doctor added', 'id' => $id]);
     }
 
+    public static function show(string $id): void
+    {
+        $doctor = Doctor::findById($id);
+        if (!$doctor) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Doctor not found']);
+            return;
+        }
+        $doctor['_id'] = (string) $doctor['_id'];
+        echo json_encode($doctor);
+    }
+
     public static function update(string $id): void
     {
         requireAdmin();
