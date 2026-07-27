@@ -14,7 +14,7 @@
         </form>
         <hr>
         <div class="text-center">
-            <p class="mb-1"><a href="/register">Don't have an account? Register</a></p>
+            <p class="mb-1"><a href="/register?redirect=<?= urlencode($_GET['redirect'] ?? '/') ?>">Don't have an account? Register</a></p>
             <p class="mb-0"><a href="#" id="forgotPasswordLink">Forgot Password?</a></p>
         </div>
     </div>

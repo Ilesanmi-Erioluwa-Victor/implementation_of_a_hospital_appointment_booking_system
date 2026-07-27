@@ -60,7 +60,8 @@ if (document.getElementById('loginForm')) {
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data.patient));
             showToast('Login successful!');
-            setTimeout(() => window.location.href = '/', 800);
+            var redirect = new URLSearchParams(window.location.search).get('redirect') || '/';
+            setTimeout(() => window.location.href = redirect, 800);
         } catch (err) {
             showToast(err.message, 'danger');
         }
@@ -88,7 +89,8 @@ if (document.getElementById('registerForm')) {
             localStorage.setItem('token', result.token);
             localStorage.setItem('user', JSON.stringify(result.patient));
             showToast('Registration successful! Please check your email to verify.');
-            setTimeout(() => window.location.href = '/', 1500);
+            var redirect = new URLSearchParams(window.location.search).get('redirect') || '/';
+            setTimeout(() => window.location.href = redirect, 1500);
         } catch (err) {
             showToast(err.message, 'danger');
         }

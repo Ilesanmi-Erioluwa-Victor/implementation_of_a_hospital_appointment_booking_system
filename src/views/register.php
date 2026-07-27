@@ -44,6 +44,6 @@
             <button type="submit" class="btn btn-primary w-100">Create Account</button>
         </form>
         <hr>
-        <p class="text-center mb-0"><a href="/login">Already have an account? Login</a></p>
+        <p class="text-center mb-0"><a href="/login<?= !empty($_GET['redirect']) ? '?redirect=' . urlencode($_GET['redirect']) : '' ?>">Already have an account? Login</a></p>
     </div>
 </div>
