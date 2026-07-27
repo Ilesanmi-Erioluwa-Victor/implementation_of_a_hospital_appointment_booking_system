@@ -13,7 +13,7 @@
         <div class="row">
             <div class="col-lg-8">
                 <div class="card p-4">
-                    <form id="bookingForm">
+                    <form id="bookingForm" onsubmit="return false;">
                         <div class="mb-3">
                             <label class="form-label">Department</label>
                             <select class="form-select" id="bookDepartment" required>
