@@ -5,9 +5,6 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../config/env.php';
 require_once __DIR__ . '/../config/db.php';
-require_once __DIR__ . '/../models/Department.php';
-require_once __DIR__ . '/../models/Doctor.php';
-require_once __DIR__ . '/../models/StaffUser.php';
 
 if (php_sapi_name() !== 'cli') {
     die('This script can only be run from the command line.');

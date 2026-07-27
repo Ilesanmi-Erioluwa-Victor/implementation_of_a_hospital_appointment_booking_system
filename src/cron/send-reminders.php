@@ -5,12 +5,6 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../config/env.php';
 require_once __DIR__ . '/../config/db.php';
-require_once __DIR__ . '/../services/EmailService.php';
-require_once __DIR__ . '/../services/ReminderService.php';
-require_once __DIR__ . '/../models/Appointment.php';
-require_once __DIR__ . '/../models/ReminderLog.php';
-require_once __DIR__ . '/../models/Doctor.php';
-require_once __DIR__ . '/../models/Patient.php';
 
 if (php_sapi_name() === 'cli' || empty($_GET['secret']) || $_GET['secret'] !== CRON_SECRET) {
     if (php_sapi_name() !== 'cli') {
