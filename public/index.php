@@ -99,7 +99,8 @@ if (preg_match('#^/api/health$#', $uri) && $method === 'GET') {
         MediBook\Models\StaffUser::create(['name' => 'Admin User', 'email' => 'admin@medibook.app', 'password' => 'admin123', 'role' => 'admin']);
         MediBook\Models\StaffUser::create(['name' => 'Front Desk User', 'email' => 'frontdesk@medibook.app', 'password' => 'front123', 'role' => 'front_desk']);
 
-        $db->selectCollection('rateLimits')->createIndex(['key' => 1, 'createdAt' => 1], ['expireAfterSeconds' => 300]);
+        $db->selectCollection('rateLimits')->createIndex(['key' => 1]);
+        $db->selectCollection('rateLimits')->createIndex(['createdAt' => 1], ['expireAfterSeconds' => 300]);
 
         echo json_encode(['message' => 'Database seeded successfully']);
     } catch (\Throwable $e) {
