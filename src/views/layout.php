@@ -27,12 +27,24 @@
                         <a class="nav-link" href="/doctors"><i class="bi bi-people"></i> Doctors</a>
                     </li>
                 </ul>
-                <ul class="navbar-nav" id="navAuth">
+                <ul class="navbar-nav">
                     <li class="nav-item" id="guestLinks">
                         <a class="nav-link" href="/login"><i class="bi bi-box-arrow-in-right"></i> Login</a>
                     </li>
                     <li class="nav-item" id="guestLinks2">
                         <a class="nav-link" href="/register"><i class="bi bi-person-plus"></i> Register</a>
+                    </li>
+                    <li class="nav-item d-none" id="staffMenu">
+                        <a class="nav-link" href="/admin"><i class="bi bi-speedometer2"></i> Dashboard</a>
+                    </li>
+                    <li class="nav-item d-none" id="staffMenu2">
+                        <a class="nav-link" href="/admin/appointments"><i class="bi bi-calendar-week"></i> Appointments</a>
+                    </li>
+                    <li class="nav-item d-none" id="staffMenu3">
+                        <a class="nav-link" href="/admin/doctors"><i class="bi bi-person-badge"></i> Doctors</a>
+                    </li>
+                    <li class="nav-item d-none" id="staffMenu4">
+                        <a class="nav-link" href="/admin/reports"><i class="bi bi-bar-chart"></i> Reports</a>
                     </li>
                     <li class="nav-item dropdown d-none" id="userMenu">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">

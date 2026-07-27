@@ -21,16 +21,27 @@ async function api(path, options = {}) {
 }
 
 function updateNav() {
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
     const guestLinks = document.getElementById('guestLinks');
     const guestLinks2 = document.getElementById('guestLinks2');
     const userMenu = document.getElementById('userMenu');
     const userName = document.getElementById('userName');
+    const staffLinks = [
+        document.getElementById('staffMenu'),
+        document.getElementById('staffMenu2'),
+        document.getElementById('staffMenu3'),
+        document.getElementById('staffMenu4'),
+    ];
     if (token && user.firstName) {
         if (guestLinks) guestLinks.style.display = 'none';
         if (guestLinks2) guestLinks2.style.display = 'none';
         if (userMenu) userMenu.classList.remove('d-none');
         if (userName) userName.textContent = user.firstName;
+        const isStaff = user.role === 'admin' || user.role === 'staff';
+        staffLinks.forEach(el => { if (el) el.classList.toggle('d-none', !isStaff); });
     }
+}
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -142,11 +153,33 @@ if (document.getElementById('staffLoginForm')) {
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data.staff));
             showToast('Staff login successful!');
-            setTimeout(() => window.location.href = '/admin/appointments', 800);
+            setTimeout(() => window.location.href = '/admin', 800);
         } catch (err) {
             showToast(err.message, 'danger');
         }
     });
+}
+
+if (document.getElementById('statTotal')) {
+    loadDashboardStats();
+}
+
+async function loadDashboardStats() {
+    try {
+        const summary = await api('/api/admin/reports/appointments-summary');
+        let total = 0, pending = 0, noShow = 0;
+        summary.forEach(r => {
+            total += r.total || 0;
+            pending += r.pending || 0;
+            noShow += r.no_show || 0;
+        });
+        document.getElementById('statTotal').textContent = total;
+        document.getElementById('statToday').textContent = summary.length + ' doctors';
+        document.getElementById('statPending').textContent = pending;
+        document.getElementById('statNoShow').textContent = noShow;
+    } catch (e) {
+        console.error('Failed to load dashboard stats');
+    }
 }
 
 async function loadDepartments(selectId, selectedValue) {

@@ -1,6 +1,6 @@
 <div class="container py-4">
     <h2 class="mb-4"><i class="bi bi-speedometer2"></i> Admin Dashboard</h2>
-    <div class="row g-4 mb-4">
+    <div class="row g-4 mb-4" id="staffStats">
         <div class="col-md-3">
             <div class="card p-3 text-center">
                 <h5 class="text-muted">Total Appointments</h5>
@@ -39,7 +39,7 @@
             </div>
         </div>
         <div class="col-md-6">
-            <div class="card p-4">
+            <div class="card p-4" id="staffLoginCard">
                 <h5><i class="bi bi-person-badge"></i> Staff Login</h5>
                 <form id="staffLoginForm">
                     <div class="mb-3">
@@ -56,3 +56,12 @@
         </div>
     </div>
 </div>
+<script>
+(function() {
+    var u = JSON.parse(localStorage.getItem('user') || '{}');
+    if (u.role === 'admin' || u.role === 'staff') {
+        var c = document.getElementById('staffLoginCard');
+        if (c) c.style.display = 'none';
+    }
+})();
+</script>
