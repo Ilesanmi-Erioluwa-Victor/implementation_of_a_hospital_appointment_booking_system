@@ -24,7 +24,6 @@ function getMongoDB(): Database
                 ],
             ]);
             $db = $client->selectDatabase('medibook');
-            $db->command(['ping' => 1]);
         } catch (\Throwable $e) {
             jsonError(500, 'Database connection failed: ' . $e->getMessage());
         }

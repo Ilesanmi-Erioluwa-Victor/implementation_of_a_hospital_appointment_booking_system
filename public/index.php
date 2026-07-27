@@ -13,15 +13,17 @@ require_once __DIR__ . '/../src/middleware/rbac.php';
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-CSRF-Token');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(204);
+set_exception_handler(function (\Throwable $e) {
+    http_response_code(500);
+    header('Content-Type: application/json');
+    echo json_encode(['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+    error_log('Uncaught: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
     exit;
-}
+});
+
+set_error_handler(function ($severity, $message, $file, $line) {
+    throw new \ErrorException($message, 0, $severity, $file, $line);
+});
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $method = $_SERVER['REQUEST_METHOD'];
@@ -29,10 +31,34 @@ $method = $_SERVER['REQUEST_METHOD'];
 $uri = rtrim($uri, '/');
 if ($uri === '') $uri = '/';
 
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-CSRF-Token');
+    http_response_code(204);
+    exit;
+}
+
+$isApiRoute = preg_match('#^/api/#', $uri);
+if ($isApiRoute) {
+    header('Content-Type: application/json');
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-CSRF-Token');
+}
+
 // ========== API ROUTES ==========
 
+if (preg_match('#^/api/health$#', $uri) && $method === 'GET') {
+    echo json_encode([
+        'status' => 'ok',
+        'mongodb_uri_set' => !empty(MONGODB_URI),
+        'app_env' => APP_ENV,
+        'php_version' => PHP_VERSION,
+    ]);
+    exit;
+
 // Auth routes
-if (preg_match('#^/api/auth/patient/register$#', $uri) && $method === 'POST') {
+} elseif (preg_match('#^/api/auth/patient/register$#', $uri) && $method === 'POST') {
     MediBook\Controllers\AuthController::handlePatientRegister();
 } elseif (preg_match('#^/api/auth/patient/login$#', $uri) && $method === 'POST') {
     MediBook\Controllers\AuthController::handlePatientLogin();
