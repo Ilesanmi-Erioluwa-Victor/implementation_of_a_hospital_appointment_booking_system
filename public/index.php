@@ -52,9 +52,24 @@ if (preg_match('#^/api/health$#', $uri) && $method === 'GET') {
     echo json_encode([
         'status' => 'ok',
         'mongodb_uri_set' => !empty(MONGODB_URI),
+        'mongodb_ext_loaded' => extension_loaded('mongodb'),
+        'mongodb_ext_version' => phpversion('mongodb'),
+        'openssl_version' => OPENSSL_VERSION_TEXT,
         'app_env' => APP_ENV,
         'php_version' => PHP_VERSION,
     ]);
+    exit;
+} elseif (preg_match('#^/api/health/db$#', $uri) && $method === 'GET') {
+    try {
+        $collections = getMongoDB()->listCollections();
+        $names = [];
+        foreach ($collections as $c) {
+            $names[] = $c->getName();
+        }
+        echo json_encode(['connected' => true, 'collections' => $names]);
+    } catch (\Throwable $e) {
+        echo json_encode(['connected' => false, 'error' => $e->getMessage()]);
+    }
     exit;
 
 // Auth routes
