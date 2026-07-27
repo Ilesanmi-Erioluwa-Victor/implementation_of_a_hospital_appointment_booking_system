@@ -185,7 +185,7 @@ if (document.getElementById('statTotal')) {
 
 async function loadDashboardStats() {
     try {
-        const summary = await api('/api/admin/reports/appointments-summary');
+        const summary = await api('/api/admin/reports/appointments-summary?start=2000-01-01&end=2099-12-31');
         let total = 0, pending = 0, noShow = 0;
         summary.forEach(r => {
             total += r.total || 0;
@@ -193,9 +193,11 @@ async function loadDashboardStats() {
             noShow += r.no_show || 0;
         });
         document.getElementById('statTotal').textContent = total;
-        document.getElementById('statToday').textContent = summary.length + ' doctors';
         document.getElementById('statPending').textContent = pending;
         document.getElementById('statNoShow').textContent = noShow;
+        const today = new Date().toISOString().split('T')[0];
+        const todayAppts = await api('/api/admin/appointments?date=' + today);
+        document.getElementById('statToday').textContent = todayAppts.length;
     } catch (e) {
         showToast('Failed to load dashboard stats. Check that you are logged in as staff.', 'danger');
     }
