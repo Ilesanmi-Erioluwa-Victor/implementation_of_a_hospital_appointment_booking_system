@@ -38,19 +38,21 @@ function updateNav() {
     const guestLinks2 = document.getElementById('guestLinks2');
     const userMenu = document.getElementById('userMenu');
     const userName = document.getElementById('userName');
-    const staffLinks = [
-        document.getElementById('staffMenu'),
-        document.getElementById('staffMenu2'),
-        document.getElementById('staffMenu3'),
-        document.getElementById('staffMenu4'),
-    ];
     if (token && (user.firstName || user.name)) {
         if (guestLinks) guestLinks.style.display = 'none';
         if (guestLinks2) guestLinks2.style.display = 'none';
         if (userMenu) userMenu.classList.remove('d-none');
         if (userName) userName.textContent = user.firstName || user.name;
-        const isStaff = user.role === 'admin' || user.role === 'staff';
-        staffLinks.forEach(el => { if (el) el.classList.toggle('d-none', !isStaff); });
+        const isStaff = user.role === 'admin' || user.role === 'staff' || user.role === 'front_desk';
+        const isAdmin = user.role === 'admin';
+        [
+            document.getElementById('staffMenu'),  // Dashboard: all staff
+            document.getElementById('staffMenu2'), // Appointments: all staff
+            document.getElementById('staffMenu3'), // Doctors: admin only
+            document.getElementById('staffMenu4'), // Reports: admin only
+        ].forEach((el, i) => {
+            if (el) el.classList.toggle('d-none', !(isStaff && (i < 2 || isAdmin)));
+        });
     }
 }
 
