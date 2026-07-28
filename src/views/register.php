@@ -38,7 +38,12 @@
             </div>
             <div class="mb-3">
                 <label class="form-label">Password</label>
-                <input type="password" class="form-control" id="regPassword" required minlength="8">
+                <div class="input-group">
+                    <input type="password" class="form-control" id="regPassword" required minlength="8">
+                    <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('regPassword', this)">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
                 <div class="form-text">Minimum 8 characters</div>
             </div>
             <button type="submit" class="btn btn-primary w-100">Create Account</button>

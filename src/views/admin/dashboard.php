@@ -48,7 +48,12 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Password</label>
-                        <input type="password" class="form-control" id="staffPassword" required>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="staffPassword" required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('staffPassword', this)">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary w-100">Staff Login</button>
                 </form>

@@ -11,6 +11,14 @@ function showToast(message, type = 'success') {
     setTimeout(() => toast.remove(), 5000);
 }
 
+function togglePassword(inputId, btn) {
+    var input = document.getElementById(inputId);
+    if (!input) return;
+    var isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    btn.innerHTML = isPassword ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+}
+
 function setLoading(btn, loading, label) {
     if (loading) {
         btn._origLabel = btn.innerHTML;
