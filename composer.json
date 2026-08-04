@@ -1,6 +1,6 @@
 {
     "name": "medibook/hospital-appointment-system",
-    "description": "MediBook - Hospital Appointment Booking System (Delta State Teaching Hospital)",
+    "description": "DESTH Appointment - Hospital Appointment Booking System (Delta State Teaching Hospital)",
     "type": "project",
     "require": {
         "php": ">=8.2",

@@ -3,7 +3,7 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-6">
-                    <h5><i class="bi bi-hospital"></i> MediBook</h5>
+                    <h5><i class="bi bi-hospital"></i> DESTH Appointment</h5>
                     <p class="text-muted small">Hospital Appointment Booking System<br>Delta State Teaching Hospital</p>
                 </div>
                 <div class="col-md-3">
@@ -19,12 +19,12 @@
                     <ul class="list-unstyled small text-muted">
                         <li><i class="bi bi-geo-alt"></i> Delta State Teaching Hospital</li>
                         <li><i class="bi bi-telephone"></i> +234 XXX XXX XXXX</li>
-                        <li><i class="bi bi-envelope"></i> support@medibook.app</li>
+                        <li><i class="bi bi-envelope"></i> support@desth.app</li>
                     </ul>
                 </div>
             </div>
             <hr class="my-3 border-secondary">
-            <p class="text-center text-muted small m-0">&copy; 2025 MediBook. All rights reserved.</p>
+            <p class="text-center text-muted small m-0">&copy; 2025 DESTH Appointment. All rights reserved.</p>
         </div>
     </footer>
     <div class="toast-container" id="toastContainer"></div>

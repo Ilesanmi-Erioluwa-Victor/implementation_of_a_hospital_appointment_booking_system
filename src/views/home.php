@@ -1,6 +1,6 @@
 <div class="hero-section">
     <div class="container text-center">
-        <h1>Welcome to MediBook</h1>
+        <h1>Welcome to DESTH Appointment</h1>
         <p class="lead mb-4">Book your hospital appointments online — no more long queues or scheduling conflicts</p>
         <div class="d-flex justify-content-center gap-3 flex-wrap">
             <a href="/doctors" class="btn btn-light btn-lg px-4">

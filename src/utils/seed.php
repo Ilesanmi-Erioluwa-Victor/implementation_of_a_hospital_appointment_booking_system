@@ -10,7 +10,7 @@ if (php_sapi_name() !== 'cli') {
     die('This script can only be run from the command line.');
 }
 
-echo "Seeding MediBook database...\n";
+echo "Seeding DESTH Appointment database...\n";
 
 $db = getMongoDB();
 $db->drop();

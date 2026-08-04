@@ -14,7 +14,7 @@ class EmailService
         }
 
         $payload = json_encode([
-            'sender' => ['name' => 'MediBook', 'email' => 'noreply@medibook.app'],
+            'sender' => ['name' => 'DESTH Appointment', 'email' => 'noreply@desth.app'],
             'to' => [['email' => $to]],
             'subject' => $subject,
             'htmlContent' => $htmlContent,
@@ -48,11 +48,11 @@ class EmailService
     public static function sendEmailVerification(string $email, string $firstName, string $token): bool
     {
         $link = APP_URL . '/verify-email?token=' . urlencode($token);
-        $html = "<h2>Welcome to MediBook, $firstName!</h2>
+        $html = "<h2>Welcome to DESTH Appointment, $firstName!</h2>
                  <p>Please verify your email by clicking the link below:</p>
                  <p><a href=\"$link\">Verify Email Address</a></p>
                  <p>If you did not create an account, please ignore this email.</p>";
-        return self::send($email, 'Verify your MediBook account', $html);
+        return self::send($email, 'Verify your DESTH Appointment account', $html);
     }
 
     public static function sendPasswordReset(string $email, string $firstName, string $token): bool
@@ -63,7 +63,7 @@ class EmailService
                  <p>Click the link below to reset your password. This link expires in 1 hour.</p>
                  <p><a href=\"$link\">Reset Password</a></p>
                  <p>If you did not request this, please ignore this email.</p>";
-        return self::send($email, 'Reset your MediBook password', $html);
+        return self::send($email, 'Reset your DESTH Appointment password', $html);
     }
 
     public static function sendAppointmentConfirmation(
@@ -85,7 +85,7 @@ class EmailService
                  <p><strong>Time:</strong> $timeSlot</p>
                  <p>If you need to cancel, please use the link below:</p>
                  <p><a href=\"$cancelLink\">Cancel Appointment</a></p>";
-        return self::send($email, 'Appointment Confirmed - MediBook', $html);
+        return self::send($email, 'Appointment Confirmed - DESTH Appointment', $html);
     }
 
     public static function sendCancellationNotice(string $email, string $patientName, string $doctorName, string $date, string $timeSlot): bool
@@ -94,7 +94,7 @@ class EmailService
                  <p>Hi $patientName,</p>
                  <p>Your appointment with <strong>$doctorName</strong> on <strong>$date</strong> at <strong>$timeSlot</strong> has been cancelled.</p>
                  <p>Please log in to book a new appointment.</p>";
-        return self::send($email, 'Appointment Cancelled - MediBook', $html);
+        return self::send($email, 'Appointment Cancelled - DESTH Appointment', $html);
     }
 
     public static function sendAppointmentReminder(string $email, string $patientName, string $doctorName, string $date, string $timeSlot): bool
@@ -106,7 +106,7 @@ class EmailService
                  <p><strong>Date:</strong> $date</p>
                  <p><strong>Time:</strong> $timeSlot</p>
                  <p>Please arrive on time.</p>";
-        return self::send($email, 'Appointment Reminder - MediBook', $html);
+        return self::send($email, 'Appointment Reminder - DESTH Appointment', $html);
     }
 
     public static function sendBulkCancellation(string $email, string $patientName, string $doctorName, string $date): bool
@@ -115,6 +115,6 @@ class EmailService
                  <p>Hi $patientName,</p>
                  <p>Due to unforeseen circumstances, all appointments with <strong>$doctorName</strong> on <strong>$date</strong> have been cancelled.</p>
                  <p>We apologise for the inconvenience. Please log in to book a new appointment.</p>";
-        return self::send($email, 'Appointment Cancelled Due to Schedule Change - MediBook', $html);
+        return self::send($email, 'Appointment Cancelled Due to Schedule Change - DESTH Appointment', $html);
     }
 }
